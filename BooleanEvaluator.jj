@@ -1,0 +1,75 @@
+options {
+    LOOKAHEAD = 2;
+}
+PARSER_BEGIN(Evaluator)
+
+public class Evaluator {
+    public static void main(String[] args) {
+        try {
+            System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
+        } catch (Throwable e) {
+            // Catching Throwable is ugly but JavaCC throws Error objects!
+            System.out.println("Failed: " + e.getMessage());
+        }
+    }
+}
+
+PARSER_END(Evaluator)
+
+SKIP:  { " " | "\t" | "\n" | "\r"                    } // Skip whitespace
+TOKEN: { "(" | ")" | "&&" | "||" | "->" | "<-" | "<->" | "!" | <VAR : (["A"-"E", "G"-"S", "U"-"Z"])> | <BOOL: (["T", "F"])> }
+
+boolean S():{ boolean result; } {
+    result = BIJ() <EOF> {
+        return result;
+    }
+}
+
+boolean BIJ(): { boolean result, rhs; } {
+    result = IMP() ("<->" rhs = BIJ() { result = result && rhs; } )* {
+        return result;
+    }
+}
+
+boolean IMP(): { boolean result, rhs; } {
+    result = OR() ("->"  rhs = IMP() { result = !result || rhs; } )* {
+        return result;
+    }
+}
+
+boolean OR(): { boolean result, rhs; } {
+    result = AND() ("||"  rhs = OR() { result = result || rhs; } )* {
+        return result;
+    }
+}
+
+boolean AND(): { boolean result, rhs; } {
+    result = NOT() ("&&" rhs = AND() { result = result && rhs; } )* {
+        return result;
+    }
+}
+
+boolean NOT(): { boolean result; } {
+    "!" result = BOOL() {
+        return !result;
+    }
+    | result = BOOL() {
+        return result;
+    }
+}
+
+boolean BOOL(): { Token n; boolean result; } {
+    n = <VAR> {
+        // add in a lookup
+        return true;
+    }
+    | n = <BOOL> {
+        if(n.image.equals("T"))
+            return true;
+        return false;
+    }
+    | "(" result = BIJ() ")" {
+        return result;
+    }
+}
+

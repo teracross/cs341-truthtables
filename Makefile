@@ -1,5 +1,5 @@
 all:
-	javacc Exp1.jj
+	javacc BooleanEvaluator.jj
 	javac Evaluator.java
 
 run:

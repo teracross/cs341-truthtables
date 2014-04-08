@@ -1,9 +1,9 @@
 all:
 	javacc Exp1.jj
-	javac SyntaxChecker.java
+	javac Evaluator.java
 
 run:
-	make && java SyntaxChecker "A && A || B && ! C <-> D <-> E -> A"
+	make && java Evaluator "T"
 
 clean:
 	rm *.class *.java

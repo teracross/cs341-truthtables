@@ -6,11 +6,10 @@ PARSER_BEGIN(Evaluator)
 public class Evaluator {
     public static void main(String[] args) {
         try {
-            new SyntaxChecker(new java.io.StringReader(args[0])).S();
-            System.out.println("Syntax is okay");
+            System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
         } catch (Throwable e) {
             // Catching Throwable is ugly but JavaCC throws Error objects!
-            System.out.println("Syntax check failed: " + e.getMessage());
+            System.out.println("Failed: " + e.getMessage());
         }
     }
 }
@@ -20,11 +19,51 @@ PARSER_END(Evaluator)
 SKIP:  { " " | "\t" | "\n" | "\r"                    } // Skip whitespace
 TOKEN: { "(" | ")" | "&&" | "||" | "->" | "<-" | "<->" | "!" | <VAR : (["A"-"Z"])> | <BOOL: (["T", "F"])> }
 
-void S():   {} { result = BIJ() <EOF> { return result; }}
-void BIJ(): {} { IMP() ("<->" BIJ())*  }
-void IMP(): {} { OR()  ("->"  IMP())* }
-void OR():  {} { AND() ("||"  OR() )* }
-void AND(): {} { NOT() ("&&"  AND())* }
-void NOT(): {} { "!" BOOL() | BOOL()  }
-void BOOL(): {} { <VAR> | <BOOL> | "(" BIJ() ")" }
+boolean S():{ } {
+    BIJ() <EOF> {
+        return true;
+    }
+}
+
+boolean BIJ(): { } {
+    IMP() ("<->" BIJ())* {
+        return true;
+    }
+}
+
+boolean IMP(): { } {
+    OR()  ("->"  IMP())* {
+        return true;
+    }
+}
+
+boolean OR():  { } {
+    AND() ("||"  OR() )* {
+        return true;
+    }
+}
+
+boolean AND(): { } {
+    NOT() ("&&"  AND())* {
+        return true;
+    }
+}
+
+boolean NOT(): { } {
+    "!" BOOL() | BOOL() {
+        return true;
+    }
+}
+
+boolean BOOL(): { } {
+    <VAR> {
+        return true;
+    }
+    | <BOOL> {
+        return true;
+    }
+    | "(" BIJ() ")" {
+        return true;
+    }
+}
 

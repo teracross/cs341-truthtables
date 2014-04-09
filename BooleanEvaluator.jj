@@ -77,7 +77,7 @@ public class Evaluator {
         int value = Integer.parseInt(bindings, 2);
         value++;
 
-        if(value >= 8){
+        if(value >= java.lang.Math.pow(2, bindings.length())){
             // Cannot return past TTT
             return "";
         }

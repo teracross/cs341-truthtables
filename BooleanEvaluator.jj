@@ -9,11 +9,10 @@ import java.util.regex.Matcher;
 
 public class Evaluator {
 
-    public static LinkedHashMap LookupTable = new LinkedHashMap();
+    LinkedHashMap LookupTable = new LinkedHashMap();
 
     public static void main(String[] args) {
         try {
-            populateTable(args[0]);
             System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
         } catch (Throwable e) {
             // Catching Throwable is ugly but JavaCC throws Error objects!
@@ -21,10 +20,10 @@ public class Evaluator {
         }
     }
 
-    public static void populateTable(String exp){
+    public void populateTable(String exp){
     // [A-Z] is a character class for pattern which specifies A through Z
 
-    Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
+    Pattern pattern = Pattern.compile("[A-Z]&&[^TF]");
     Matcher matcher = pattern.matcher(exp);
 
       while(matcher.find()){
@@ -32,30 +31,8 @@ public class Evaluator {
         String var = exp.substring(matcher.start(), matcher.start()+1);
         boolean boolv = true;
 
-        if(LookupTable.get(var)==null){
-            LookupTable.put(var, boolv);
-        }
+        LookupTable.put(var, boolv);
       }
-    }
-
-    // Given a set of bindings, return the next set of bindings
-    // Ex: TFF returns TFT
-    public String successor(String bindings){
-        bindings = bindings.replace('T', '1');
-        bindings = bindings.replace('F', '0');
-        int value = Integer.parseInt(bindings, 2);
-        value++;
-
-        if(value >= 8){
-            // Cannot return past TTT
-            return "";
-        }
-        else{
-            String newbindings = Integer.toString(value);
-            newbindings = newbindings.replace('1', 'T');
-            newbindings = newbindings.replace('0', 'F');
-            return newbindings;
-        }
     }
 }
 
@@ -105,7 +82,8 @@ boolean NOT(): { boolean result; } {
 
 boolean BOOL(): { Token n; boolean result; } {
     n = <VAR> {
-        return (boolean)Evaluator.LookupTable.get(n.image);
+        // add in a lookup
+        return true;
     }
     | n = <BOOL> {
         if(n.image.equals("T"))

@@ -3,7 +3,7 @@ all:
 	javac Evaluator.java
 
 run:
-	make && java Evaluator "!A -> B && A && D <-> B"
+	make && java Evaluator "A"
 
 clean:
 	rm *.class *.java

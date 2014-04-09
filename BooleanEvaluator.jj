@@ -13,6 +13,7 @@ public class Evaluator {
 
     public static void main(String[] args) {
         try {
+            Evaluator evaluator = new Evaluator(new java.io.StringReader(args[0]));
 	    int numvars = countvars(args[0]);
 	    String mappings = "";
 
@@ -23,9 +24,10 @@ public class Evaluator {
 
 	    do{
                 populateTable(args[0], mappings);
-                System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
+                System.out.println(evaluator.S());
+                evaluator.ReInit(new java.io.StringReader(args[0]));
 		mappings = successor(mappings);
-	    }while(!mappings.equals(""));
+	    } while(!mappings.equals(""));
         } catch (Throwable e) {
             // Catching Throwable is ugly but JavaCC throws Error objects!
             System.out.println("Failed: " + e.getMessage());

@@ -3,7 +3,14 @@ options {
 }
 PARSER_BEGIN(Evaluator)
 
+import java.util.LinkedHashMap;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 public class Evaluator {
+
+    LinkedHashMap LookupTable = new LinkedHashMap();
+
     public static void main(String[] args) {
         try {
             System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
@@ -12,11 +19,26 @@ public class Evaluator {
             System.out.println("Failed: " + e.getMessage());
         }
     }
+
+    public void populateTable(String exp){
+    // [A-Z] is a character class for pattern which specifies A through Z
+
+    Pattern pattern = Pattern.compile("[A-Z]&&[^TF]");
+    Matcher matcher = pattern.matcher(exp);
+
+      while(matcher.find()){
+
+        String var = exp.substring(matcher.start(), matcher.start()+1);
+        boolean boolv = true;
+
+        LookupTable.put(var, boolv);
+      }
+    }
 }
 
 PARSER_END(Evaluator)
 
-SKIP:  { " " | "\t" | "\n" | "\r"                    } // Skip whitespace
+SKIP:  { " " | "\t" | "\n" | "\r" } // Skip whitespace
 TOKEN: { "(" | ")" | "&&" | "||" | "->" | "<-" | "<->" | "!" | <VAR : (["A"-"E", "G"-"S", "U"-"Z"])> | <BOOL: (["T", "F"])> }
 
 boolean S():{ boolean result; } {

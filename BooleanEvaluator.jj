@@ -13,34 +13,63 @@ public class Evaluator {
 
     public static void main(String[] args) {
         try {
-            populateTable(args[0]);
-            System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
+	    int numvars = countvars(args[0]);
+	    String mappings = "";
+
+	    // Based on how we implemented successor
+	    for(int i = 0; i < numvars; i++){
+		mappings = mappings.concat("F");
+	    }
+
+	    do{
+                populateTable(args[0], mappings);
+                System.out.println(new Evaluator(new java.io.StringReader(args[0])).S());
+		mappings = successor(mappings);
+	    }while(!mappings.equals(""));
         } catch (Throwable e) {
             // Catching Throwable is ugly but JavaCC throws Error objects!
             System.out.println("Failed: " + e.getMessage());
         }
     }
 
-    public static void populateTable(String exp){
-    // [A-Z] is a character class for pattern which specifies A through Z
+    public static int countvars(String exp){
+	Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
+	Matcher matcher = pattern.matcher(exp);
+	int count = 0;
+	String seenvars = "";
 
-    Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
-    Matcher matcher = pattern.matcher(exp);
-
-      while(matcher.find()){
-
-        String var = exp.substring(matcher.start(), matcher.start()+1);
-        boolean boolv = true;
-
-        if(LookupTable.get(var)==null){
-            LookupTable.put(var, boolv);
+	while(matcher.find()){
+	    // .contains needs a CharSequence, which can be made by doing c+"" for a char c
+	    if(!seenvars.contains(exp.charAt(matcher.start())+"")){
+	        count++;
+		seenvars = seenvars.concat(exp.substring(matcher.start(), matcher.start()+1));
+	    }
         }
-      }
+	return count;
+    }
+
+    public static void populateTable(String exp, String bindings){
+    // [A-Z] is a character class for pattern which specifies A through Z
+	boolean boolv = true;
+	int count = 0;
+	Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
+	Matcher matcher = pattern.matcher(exp);
+
+        while(matcher.find()){
+
+          String var = exp.substring(matcher.start(), matcher.start()+1);
+
+          if(LookupTable.get(var)==null){
+	      boolv = (bindings.charAt(count)=='T')? true : false;
+              LookupTable.put(var, boolv);
+	      count++;
+          }
+        }
     }
 
     // Given a set of bindings, return the next set of bindings
     // Ex: TFF returns TFT
-    public String successor(String bindings){
+    public static String successor(String bindings){
         bindings = bindings.replace('T', '1');
         bindings = bindings.replace('F', '0');
         int value = Integer.parseInt(bindings, 2);

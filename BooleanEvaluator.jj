@@ -50,6 +50,7 @@ public class Evaluator {
 	return count;
     }
 
+    // TODO: please fix this, Eysa
     public static void populateTable(String exp, String bindings){
     // [A-Z] is a character class for pattern which specifies A through Z
 	boolean boolv = true;

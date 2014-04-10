@@ -10,9 +10,10 @@ import java.util.regex.Matcher;
 public class Evaluator {
 
     /* Constants */
-    public static final String FALSE    = "F";
-    public static final String TRUE     = "T";
-    public static final String END_STR  = "";
+    public static final String FALSE      = "F";
+    public static final String TRUE       = "T";
+    public static final String END_STR    = "";
+    public static final String VAR_REGEX  = "[a-e[g-s[u-z]]]";
 
     /* Mappings for variables in boolean expression */
     public static LinkedHashMap LookupTable = new LinkedHashMap();
@@ -44,7 +45,7 @@ public class Evaluator {
 
     public static int count_vars(String exp) {
         /* Local variable declarations */
-        Pattern pattern     = Pattern.compile("[A-E[G-S[U-Z]]]");
+        Pattern pattern     = Pattern.compile(VAR_REGEX);
         Matcher matcher     = pattern.matcher(exp);
         int count           = 0;
         String seen_vars    = "";
@@ -58,25 +59,26 @@ public class Evaluator {
         return count;
     }
 
-    // TODO: please fix this, Eysa
     public static void populateTable(String exp, String bindings) {
-        boolean boolv   = true;
+        boolean bool_v  = true;
         int     count   = 0;
-        Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
+        Pattern pattern = Pattern.compile(VAR_REGEX);
         Matcher matcher = pattern.matcher(exp);
         String  var     = "";
+
+        LookupTable.clear();
 
         while(matcher.find()) {
             var = matcher.group();
             if(LookupTable.get(var) == null) {
-                boolv = bindings.charAt(count++) == 'T';
-                LookupTable.put(var, boolv);
+                bool_v = bindings.charAt(count++) == 'T';
+                LookupTable.put(var, bool_v);
             }
         }
     }
 
     /* Successor returns the next binding string in binary counting order */
-    /* Returns "" on overflow */
+    /* Returns END_STR on overflow */
     public static String successor(String bindings, int num_vars) {
         bindings = bindings.replace('T', '1');
         bindings = bindings.replace('F', '0');
@@ -84,7 +86,7 @@ public class Evaluator {
         ++value;
 
         if(value >= java.lang.Math.pow(2, num_vars))
-            return "";
+            return END_STR;
         else {
             return String.format("%" + num_vars + "s", Integer.toBinaryString(value)).replace(' ', '0').replace('1', 'T').replace('0', 'F');
         }
@@ -95,9 +97,19 @@ public class Evaluator {
 PARSER_END(Evaluator)
 
 SKIP:  { " " | "\t" | "\n" | "\r" } // Skip whitespace
-TOKEN: { "(" | ")" | "&&" | "||" | "->" | "<-" | "<->" | "!" | <VAR : (["A"-"E", "G"-"S", "U"-"Z"])> | <BOOL: (["T", "F"])> }
+TOKEN: {    "(" | ")"
+          | "!"
+          | "&"
+          | "X"
+          | "|"
+          | "->"
+          | "<-"
+          | "<->"
+          | <VAR : (["a"-"e", "g"-"s", "u"-"z"])>
+          | <BOOL: (["T", "F"])>
+}
 
-boolean S():{ boolean result; } {
+boolean S(): { boolean result; } {
     result = EQ() <EOF> {
         return result;
     }
@@ -116,13 +128,19 @@ boolean IMP(): { boolean result, rhs; } {
 }
 
 boolean OR(): { boolean result, rhs; } {
-    result = AND() ("||"  rhs = OR() { result = result || rhs; } )* {
+    result = XOR() ("|"  rhs = OR() { result = result || rhs; } )* {
+        return result;
+    }
+}
+
+boolean XOR(): { boolean result, rhs; } {
+    result = AND() ("X" rhs = XOR() { result = result && !rhs || !result && rhs; } )* {
         return result;
     }
 }
 
 boolean AND(): { boolean result, rhs; } {
-    result = NOT() ("&&" rhs = AND() { result = result && rhs; } )* {
+    result = NOT() ("&" rhs = AND() { result = result && rhs; } )* {
         return result;
     }
 }

@@ -9,86 +9,87 @@ import java.util.regex.Matcher;
 
 public class Evaluator {
 
+    /* Constants */
+    public static final String FALSE    = "F";
+    public static final String TRUE     = "T";
+    public static final String END_STR  = "";
+
+    /* Mappings for variables in boolean expression */
     public static LinkedHashMap LookupTable = new LinkedHashMap();
 
     public static void main(String[] args) {
         try {
-            Evaluator evaluator = new Evaluator(new java.io.StringReader(args[0]));
-	    int numvars = countvars(args[0]);
-	    String mappings = "";
+            /* Local variables */
+            String    expression    = args[0];
+            Evaluator evaluator     = new Evaluator(new java.io.StringReader(expression));
+            int       num_vars      = count_vars(expression);
+            String    mappings      = ""; // TODO: Is this necessary?
 
-	    // Based on how we implemented successor
-	    for(int i = 0; i < numvars; i++){
-		mappings = mappings.concat("F");
-	    }
-
-	    do{
-                populateTable(args[0], mappings);
+            /* Initialize mappings to a string of all F */
+            for(int i = 0; i < num_vars; i++)
+                mappings = mappings.concat("F");
+            while(mappings.equals(END_STR) == false) {
+                System.out.println(mappings);
+                populateTable(expression, mappings);
                 System.out.println(evaluator.S());
-                evaluator.ReInit(new java.io.StringReader(args[0]));
-		mappings = successor(mappings);
-	    } while(!mappings.equals(""));
-        } catch (Throwable e) {
+                evaluator.ReInit(new java.io.StringReader(expression));
+                mappings = successor(mappings, num_vars);
+            }
+        }
+        catch (Throwable e) {
             // Catching Throwable is ugly but JavaCC throws Error objects!
-            System.out.println("Failed: " + e.getMessage());
+            System.out.println("Fatal exception: " + e.getMessage());
         }
     }
 
-    public static int countvars(String exp){
-	Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
-	Matcher matcher = pattern.matcher(exp);
-	int count = 0;
-	String seenvars = "";
+    public static int count_vars(String exp) {
+        /* Local variable declarations */
+        Pattern pattern     = Pattern.compile("[A-E[G-S[U-Z]]]");
+        Matcher matcher     = pattern.matcher(exp);
+        int count           = 0;
+        String seen_vars    = "";
 
-	while(matcher.find()){
-	    // .contains needs a CharSequence, which can be made by doing c+"" for a char c
-	    if(!seenvars.contains(exp.charAt(matcher.start())+"")){
-	        count++;
-		seenvars = seenvars.concat(exp.substring(matcher.start(), matcher.start()+1));
-	    }
+        while(matcher.find()) {
+            if(seen_vars.contains(matcher.group()) == false) {
+                ++count;
+                seen_vars = seen_vars.concat(matcher.group());
+            }
         }
-	return count;
+        return count;
     }
 
     // TODO: please fix this, Eysa
-    public static void populateTable(String exp, String bindings){
-    // [A-Z] is a character class for pattern which specifies A through Z
-	boolean boolv = true;
-	int count = 0;
-	Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
-	Matcher matcher = pattern.matcher(exp);
+    public static void populateTable(String exp, String bindings) {
+        boolean boolv   = true;
+        int     count   = 0;
+        Pattern pattern = Pattern.compile("[A-E[G-S[U-Z]]]");
+        Matcher matcher = pattern.matcher(exp);
+        String  var     = "";
 
-        while(matcher.find()){
-
-          String var = exp.substring(matcher.start(), matcher.start()+1);
-
-          if(LookupTable.get(var)==null){
-	      boolv = (bindings.charAt(count)=='T')? true : false;
-              LookupTable.put(var, boolv);
-	      count++;
-          }
+        while(matcher.find()) {
+            var = matcher.group();
+            if(LookupTable.get(var) == null) {
+                boolv = bindings.charAt(count++) == 'T';
+                LookupTable.put(var, boolv);
+            }
         }
     }
 
-    // Given a set of bindings, return the next set of bindings
-    // Ex: TFF returns TFT
-    public static String successor(String bindings){
+    /* Successor returns the next binding string in binary counting order */
+    /* Returns "" on overflow */
+    public static String successor(String bindings, int num_vars) {
         bindings = bindings.replace('T', '1');
         bindings = bindings.replace('F', '0');
         int value = Integer.parseInt(bindings, 2);
-        value++;
+        ++value;
 
-        if(value >= java.lang.Math.pow(2, bindings.length())){
-            // Cannot return past TTT
+        if(value >= java.lang.Math.pow(2, num_vars))
             return "";
-        }
-        else{
-            String newbindings = Integer.toString(value);
-            newbindings = newbindings.replace('1', 'T');
-            newbindings = newbindings.replace('0', 'F');
-            return newbindings;
+        else {
+            return String.format("%" + num_vars + "s", Integer.toBinaryString(value)).replace(' ', '0').replace('1', 'T').replace('0', 'F');
         }
     }
+
 }
 
 PARSER_END(Evaluator)
@@ -97,13 +98,13 @@ SKIP:  { " " | "\t" | "\n" | "\r" } // Skip whitespace
 TOKEN: { "(" | ")" | "&&" | "||" | "->" | "<-" | "<->" | "!" | <VAR : (["A"-"E", "G"-"S", "U"-"Z"])> | <BOOL: (["T", "F"])> }
 
 boolean S():{ boolean result; } {
-    result = BIJ() <EOF> {
+    result = EQ() <EOF> {
         return result;
     }
 }
 
-boolean BIJ(): { boolean result, rhs; } {
-    result = IMP() ("<->" rhs = BIJ() { result = result && rhs || !result && !rhs; } )* {
+boolean EQ(): { boolean result, rhs; } {
+    result = IMP() ("<->" rhs = EQ() { result = result && rhs || !result && !rhs; } )* {
         return result;
     }
 }
@@ -144,7 +145,7 @@ boolean BOOL(): { Token n; boolean result; } {
             return true;
         return false;
     }
-    | "(" result = BIJ() ")" {
+    | "(" result = EQ() ")" {
         return result;
     }
 }

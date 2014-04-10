@@ -24,7 +24,7 @@ public class Evaluator {
             String    expression    = args[0];
             Evaluator evaluator     = new Evaluator(new java.io.StringReader(expression));
             int       num_vars      = count_vars(expression);
-            String    mappings      = ""; // TODO: Is this necessary?
+            String    mappings      = "";
 
             /* Initialize mappings to a string of all F */
             for(int i = 0; i < num_vars; i++)
@@ -159,9 +159,7 @@ boolean BOOL(): { Token n; boolean result; } {
         return (boolean)Evaluator.LookupTable.get(n.image);
     }
     | n = <BOOL> {
-        if(n.image.equals("T"))
-            return true;
-        return false;
+        return n.image.equals("T");
     }
     | "(" result = EQ() ")" {
         return result;
